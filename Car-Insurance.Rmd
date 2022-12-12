@@ -7,5 +7,74 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(RColorBrewer)
+```
+
+```{r}
+carDf <- read.csv("Car_Insurance_Claim.csv")
+```
+
+```{r}
+carDf$AGE <- factor(carDf$AGE,levels = c(unique(carDf$AGE)),labels = c(0:(length(unique(carDf$AGE)) - 1)))
+carDf$GENDER <- factor(carDf$GENDER,levels = c(unique(carDf$GENDER)),labels = c(0:(length(unique(carDf$GENDER)) - 1)))
+carDf$RACE <- factor(carDf$RACE,levels = c(unique(carDf$RACE)),labels = c(0:(length(unique(carDf$RACE)) - 1)))
+carDf$DRIVING_EXPERIENCE <- factor(carDf$DRIVING_EXPERIENCE,levels = c(unique(carDf$DRIVING_EXPERIENCE)),labels = c(0:(length(unique(carDf$DRIVING_EXPERIENCE)) - 1)))
+carDf$EDUCATION <- factor(carDf$EDUCATION,levels = c(unique(carDf$EDUCATION)),labels = c(0:(length(unique(carDf$EDUCATION)) - 1)))
+carDf$INCOME <- factor(carDf$INCOME,levels = c(unique(carDf$INCOME)),labels = c(0:(length(unique(carDf$INCOME)) - 1)))
+carDf$VEHICLE_YEAR <- factor(carDf$VEHICLE_YEAR,levels = c(unique(carDf$VEHICLE_YEAR)),labels = c(0:(length(unique(carDf$VEHICLE_YEAR)) - 1)))
+carDf$VEHICLE_TYPE <- factor(carDf$VEHICLE_TYPE,levels = c(unique(carDf$VEHICLE_TYPE)),labels = c(0:(length(unique(carDf$VEHICLE_TYPE)) - 1)))
+```
+
+```{r}
+sum(is.na(carDf$CREDIT_SCORE)) 
+```
+
+```{r}
+sum(is.na(carDf$ANNUAL_MILEAGE)) 
+```
+
+
+
+```{r}
+par(mfrow=c(3,1))
+
+carDf %>%
+  ggplot(aes(x = SPEEDING_VIOLATIONS)) +
+    geom_bar(alpha = 0.8)
+
+carDf %>%
+  ggplot(aes(x = DUIS)) +
+    geom_bar()
+
+carDf %>%
+  ggplot(aes(x = PAST_ACCIDENTS)) +
+    geom_bar(alpha = 0.8)
+```
+
+```{r}
+carDfDifferenceBetweenGender <- carDf %>% 
+  select(GENDER, SPEEDING_VIOLATIONS, DUIS, PAST_ACCIDENTS) %>% 
+  group_by(GENDER) %>% 
+  summarise(across(everything(), sum),
+            .groups = 'drop')  %>%
+  as.data.frame()
+
+#carDfSpeedingViolations %>% 
+ # barplot(aes(x = GENDER, y = SPEEDING_VIOLATIONS))
+
+```
+
+
+
+
+
+
+```{python}
+import matplotlib
+import seaborn
+
+#print(carDf)
 ```
 

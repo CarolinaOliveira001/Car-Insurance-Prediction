@@ -1,0 +1,56 @@
+The carDf has 19 columns and 10000 observations.
+
+Here will contain some explanations about the columns and the possible values for it:
+- ID: id of a policyholder
+  numbers of different lengths
+- AGE: age of the policyholder
+  4 different categories: "16-25", "26-39", "40-64", "65+"
+- GENDER: gender of the policyholder
+  2 different categories: "female", "male" 
+- RACE: race of the policyholder without any specific name
+  2 different categories: "majority" "minority"
+- DRIVING_EXPERIENCE: driving experience of the policyholder
+  4 different categories: "0-9y", "10-19y", "20-29y", "30y+"  
+- EDUCATION: highest education of the policyholder
+  3 different categories: "high school", "none", "university" 
+- INCOME: income class of the policyholder
+  4 different categories: "upper class", "poverty", "working class", "middle class" 
+- CREDIT_SCORE: binary values if the policyholder contains any credit score or not. Some missing values are possible.
+  Continuous values from 0 and 1, contains NA. There are 982 NA values.
+- VEHICLE_OWNERSHIP: binary values if the policyholder is the owner of the car or not
+  2 Categories: 1, 0
+- VEHICLE_YEAR: Vehicle can be either from before 2015 or after 2015
+  2 Categories: "after 2015"  "before 2015"
+- MARRIED: binary values if the policyholder is married or not
+  2 Categories: 0 1
+- CHILDREN: binary values if the policyholder has any children or not
+  2 Categories: 0 1
+- POSTAL_CODE: from which postal code the policyholder lives
+  4 different categories: 10238, 32765, 92101, 21217
+- ANNUAL_MILEAGE: the annual mileage the insured vehicle has
+  many Categories: 12000, 16000, 11000, 13000, 14000, 10000, 8000, NA, 18000, 17000, 7000, 15000, 9000, 5000, 6000, 19000, 4000, 3000, 2000, 20000, 21000, 22000
+- VEHICLE_TYPE: type of car which contains the insurance
+  2 Categories: "sedan", "sports car"
+- SPEEDING_VIOLATIONS: speeding violations the policyholder has
+  Discrete value in [0, 22]
+- DUIS: duis the policyholder has
+  Discrete values in [0, 6]
+- PAST_ACCIDENTS: past accidents the policyholder has
+  Discrete values in [0, 15]
+- OUTCOME: indicates 1 if a customer has claimed his/her loan else 0.
+  2 Categories: 0 1
+  
+This website helped me configure the python in R.
+https://support.posit.co/hc/en-us/articles/360023654474-Installing-and-Configuring-Python-with-RStudio
+
+The aim is to predict the outcome column. It is a binary classification.
+
+After plot the distribution of the SPEEDING_VIOLATIONS, DUIS and PAST_ACCIDENTS, it looks like they follow a power law distribution.
+
+Study by GENDER, it can see that there are more violations made by man, than by woman. We cannot forget to see if there are more men than women and if so, we will normalize it.
+
+
+
+
+
+  
