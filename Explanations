@@ -47,7 +47,16 @@ The aim is to predict the outcome column. It is a binary classification.
 
 After plot the distribution of the SPEEDING_VIOLATIONS, DUIS and PAST_ACCIDENTS, it looks like they follow a power law distribution.
 
-Study by GENDER, it can see that there are more violations made by man, than by woman. We cannot forget to see if there are more men than women and if so, we will normalize it.
+Plots:
+- density distributions about credit_score and a boxplot
+- density + barplot about annual_mileage with the group outcome
+- minority vs outcome 
+- correlation
+- boxplot of credit score vs income
+
+
+
+
 
 
 

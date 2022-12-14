@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(ggplot2)
 library(RColorBrewer)
+library(tidyverse)
 ```
 
 ```{r}
@@ -35,11 +36,16 @@ sum(is.na(carDf$CREDIT_SCORE))
 sum(is.na(carDf$ANNUAL_MILEAGE)) 
 ```
 
+```{r}
+carDf %>%
+  ggplot(aes(x=factor(OUTCOME))) +
+  geom_bar(stat="count") + 
+  scale_x_discrete(breaks=c("0","1")) +
+  labs(title="People claiming a loan vs people not claiming a loan", x= "", y = "Amount")
+```
 
 
 ```{r}
-par(mfrow=c(3,1))
-
 carDf %>%
   ggplot(aes(x = SPEEDING_VIOLATIONS)) +
     geom_bar(alpha = 0.8)
@@ -53,17 +59,26 @@ carDf %>%
     geom_bar(alpha = 0.8)
 ```
 
+
 ```{r}
-carDfDifferenceBetweenGender <- carDf %>% 
-  select(GENDER, SPEEDING_VIOLATIONS, DUIS, PAST_ACCIDENTS) %>% 
-  group_by(GENDER) %>% 
+carDfDifferenceBetweenOUTCOME <- carDf %>% 
+  select(OUTCOME, SPEEDING_VIOLATIONS, DUIS, PAST_ACCIDENTS) %>% 
+  group_by(OUTCOME) %>% 
   summarise(across(everything(), sum),
             .groups = 'drop')  %>%
   as.data.frame()
 
-#carDfSpeedingViolations %>% 
- # barplot(aes(x = GENDER, y = SPEEDING_VIOLATIONS))
 
+```
+
+```{r}
+carDfDifferenceBetweenOUTCOME %>% 
+  pivot_longer(!OUTCOME, names_to = "categories", values_to = "count") %>%
+  ggplot(aes(x = OUTCOME, y = count, fill = categories)) +
+  geom_bar(position = "dodge", stat="identity") +
+  #scale_x_discrete(breaks = c(0, 1), labels = c("0","1")) +
+  labs(title = "Number of violations for each category", x = "", y = "Amount", legend = "Road violations")
+  
 ```
 
 
