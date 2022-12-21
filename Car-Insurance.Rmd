@@ -5,13 +5,17 @@ date: "2022-12-12"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(ggplot2)
 library(RColorBrewer)
 library(tidyverse)
 library(reshape2)
+library(missForest)
+library(smotefamily)
+library(randomForest)
+library(caret)
 ```
 
 The dataset chosen was the Car Insurance Claim dataset.
@@ -24,17 +28,35 @@ carDf <- read.csv("Car_Insurance_Claim.csv")
 head(carDf,5)
 ```
 
-We will change the categorical values into multiple category values.
+Before changing the categorical column to its labels, i will save some labels.
 
 ```{r}
-carDf$AGE <- factor(carDf$AGE,levels = c(unique(carDf$AGE)),labels = c(0:(length(unique(carDf$AGE)) - 1)))
-carDf$GENDER <- factor(carDf$GENDER,levels = c(unique(carDf$GENDER)),labels = c(0:(length(unique(carDf$GENDER)) - 1)))
-carDf$RACE <- factor(carDf$RACE,levels = c(unique(carDf$RACE)),labels = c(0:(length(unique(carDf$RACE)) - 1)))
-carDf$DRIVING_EXPERIENCE <- factor(carDf$DRIVING_EXPERIENCE,levels = c(unique(carDf$DRIVING_EXPERIENCE)),labels = c(0:(length(unique(carDf$DRIVING_EXPERIENCE)) - 1)))
-carDf$EDUCATION <- factor(carDf$EDUCATION,levels = c(unique(carDf$EDUCATION)),labels = c(0:(length(unique(carDf$EDUCATION)) - 1)))
-carDf$INCOME <- factor(carDf$INCOME,levels = c(unique(carDf$INCOME)),labels = c(0:(length(unique(carDf$INCOME)) - 1)))
-carDf$VEHICLE_YEAR <- factor(carDf$VEHICLE_YEAR,levels = c(unique(carDf$VEHICLE_YEAR)),labels = c(0:(length(unique(carDf$VEHICLE_YEAR)) - 1)))
-carDf$VEHICLE_TYPE <- factor(carDf$VEHICLE_TYPE,levels = c(unique(carDf$VEHICLE_TYPE)),labels = c(0:(length(unique(carDf$VEHICLE_TYPE)) - 1)))
+labelDRIVING_EXPERIENCE <- unique(carDf$DRIVING_EXPERIENCE)
+labelVEHICLE_YEAR <- unique(carDf$VEHICLE_YEAR)
+```
+
+We will change the categorical values into multiple category values. We need to change the type of the column to a numerical one so we can plot a correlation matrix.
+
+```{r}
+sapply(carDf, class)
+```
+
+```{r}
+carDf$AGE <- as.numeric(factor(carDf$AGE,levels = c(unique(carDf$AGE)),labels = c(0:(length(unique(carDf$AGE)) - 1))))
+
+carDf$GENDER <- as.numeric(factor(carDf$GENDER,levels = c(unique(carDf$GENDER)),labels = c(0:(length(unique(carDf$GENDER)) - 1))))
+
+carDf$RACE <- as.numeric(factor(carDf$RACE,levels = c(unique(carDf$RACE)),labels = c(0:(length(unique(carDf$RACE)) - 1))))
+
+carDf$DRIVING_EXPERIENCE <- as.numeric(factor(carDf$DRIVING_EXPERIENCE,levels = c(unique(carDf$DRIVING_EXPERIENCE)),labels = c(0:(length(unique(carDf$DRIVING_EXPERIENCE)) - 1))))
+
+carDf$EDUCATION <- as.numeric(factor(carDf$EDUCATION,levels = c(unique(carDf$EDUCATION)),labels = c(0:(length(unique(carDf$EDUCATION)) - 1))))
+
+carDf$INCOME <- as.numeric(factor(carDf$INCOME,levels = c(unique(carDf$INCOME)),labels = c(0:(length(unique(carDf$INCOME)) - 1))))
+
+carDf$VEHICLE_YEAR <- as.numeric(factor(carDf$VEHICLE_YEAR,levels = c(unique(carDf$VEHICLE_YEAR)),labels = c(0:(length(unique(carDf$VEHICLE_YEAR)) - 1))))
+
+carDf$VEHICLE_TYPE <- as.numeric(factor(carDf$VEHICLE_TYPE,levels = c(unique(carDf$VEHICLE_TYPE)),labels = c(0:(length(unique(carDf$VEHICLE_TYPE)) - 1))))
 ```
 
 We summarise the data set to have an overview of each column.
@@ -47,30 +69,7 @@ summary(carDf)
 sapply(carDf, typeof)
 ```
 
-We need to change the type of the column to a numerical one so we can plot a correlation matrix.
-
-```{r}
-carDf$ID <- as.numeric(carDf$ID)
-carDf$AGE <- as.numeric(carDf$AGE)
-carDf$GENDER <- as.numeric(carDf$GENDER)
-carDf$RACE <- as.numeric(carDf$RACE)
-carDf$DRIVING_EXPERIENCE <- as.numeric(carDf$DRIVING_EXPERIENCE)
-carDf$EDUCATION <- as.numeric(carDf$EDUCATION)
-carDf$INCOME <- as.numeric(carDf$INCOME)
-carDf$CREDIT_SCORE <- as.numeric(carDf$CREDIT_SCORE)
-carDf$VEHICLE_OWNERSHIP <- as.numeric(carDf$VEHICLE_OWNERSHIP)
-carDf$VEHICLE_YEAR <- as.numeric(carDf$VEHICLE_YEAR)
-carDf$MARRIED <- as.numeric(carDf$MARRIED)
-carDf$CHILDREN <- as.numeric(carDf$CHILDREN)
-carDf$POSTAL_CODE <- as.numeric(carDf$POSTAL_CODE)
-carDf$ANNUAL_MILEAGE <- as.numeric(carDf$ANNUAL_MILEAGE)
-carDf$SPEEDING_VIOLATIONS <- as.numeric(carDf$SPEEDING_VIOLATIONS)
-carDf$DUIS <- as.numeric(carDf$DUIS)
-carDf$PAST_ACCIDENTS <- as.numeric(carDf$PAST_ACCIDENTS)
-carDf$OUTCOME <- as.numeric(carDf$OUTCOME)
-```
-
-We will save the correlation values between columns into a dataframe.
+We will save the correlation values between columns into a dataframe. We removed ID from the correlation plot it was white in almost every tile.
 
 ```{r}
 corrDf <- carDf %>% 
@@ -83,18 +82,8 @@ corrDf <- carDf %>%
 ```
 
 ```{r}
-head(corrDf)
-```
-
-```{r}
-melted_corrDf <- melt(corrDf)
-head(melted_corrDf)
-```
-
-We removed ID from the correlation plot it was white in almost every tile.
-
-```{r}
-melted_corrDf %>% 
+corrDf %>% 
+  melt() %>% 
   ggplot(aes(x=Var1, y=Var2, fill=value)) + 
   geom_tile(color = "white") +
   scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0, 
@@ -119,85 +108,166 @@ First, let us see the most correlated features with the OUTCOME column.
 ```{r}
 corrDf %>% 
   as.data.frame() %>% 
+  select(OUTCOME) %>% 
+  mutate(posOUTCOME = case_when(OUTCOME < 0 ~ abs(OUTCOME),
+                               OUTCOME >= 0  ~ OUTCOME))  %>% 
+  arrange(desc(posOUTCOME)) %>% 
   select(OUTCOME)
 ```
 
+We can see that the 5 columns most correlated to the column OUTCOME are:
+- DRIVING_EXPERIENCE
+- VEHICLE_OWNERSHIP
+- CREDIT_SCORE
+- PAST_ACCIDENTS
+- VEHICLE_YEAR
+
+And the 5 columns least correlated to the column OUTCOME are:
+- RACE
+- AGE
+- EDUCATION
+- POSTAL_CODE
+- GENDER
+
 Now we have seen that there are 2 column with some a lot of NA values. Those columns are the CREDIT_SCORE and the ANNUAL_MILEAGE. One question we might ask is if it is possible to delete those columns. However, from the previous table we could see there is some correlation from the target and those 2 columns. So the following will be a method how to deal and solve the NA issue. 
 
-We will first start with the CREDIT_SCORE. We will save the values of CREDIT_SCORE with 
-
 ```{r}
-creditScoreDependentColumns <- corrDf %>% 
-  as.data.frame() %>% 
-  select(CREDIT_SCORE) %>% 
-  filter(CREDIT_SCORE >= 0.25) %>% 
-  rownames()
-
-creditScoreDependentColumns <- creditScoreDependentColumns[!(creditScoreDependentColumns %in% c("CREDIT_SCORE"))]
-
-oldCreditScore <- carDf$CREDIT_SCORE
+carDf$AGE <- factor(carDf$AGE)
+carDf$GENDER <- factor(carDf$GENDER)
+carDf$RACE <- factor(carDf$RACE)
+carDf$DRIVING_EXPERIENCE <- factor(carDf$DRIVING_EXPERIENCE)
+carDf$EDUCATION <- factor(carDf$EDUCATION)
+carDf$INCOME <- factor(carDf$INCOME)
+carDf$VEHICLE_YEAR <- factor(carDf$VEHICLE_YEAR)
+carDf$VEHICLE_TYPE <- factor(carDf$VEHICLE_TYPE)
+carDf$ANNUAL_MILEAGE <- factor(carDf$ANNUAL_MILEAGE)
 ```
 
 ```{r}
-creditScoreDependentColumns
+carDf$ANNUAL_MILEAGE <- as.numeric(carDf$ANNUAL_MILEAGE)
+f <- function(x) x + 1
+carDf <- cbind(carDf[c(1:13, 15:19)], apply(carDf[14],2, f))
 ```
 
 ```{r}
-meanCreditScoreDf <- carDf %>% 
-  select(DRIVING_EXPERIENCE, VEHICLE_OWNERSHIP, MARRIED, CREDIT_SCORE) %>% 
-  filter(!is.na(CREDIT_SCORE)) %>% 
-  group_by(DRIVING_EXPERIENCE, VEHICLE_OWNERSHIP, MARRIED) %>% 
-  summarise(across(everything(), mean), .groups = 'drop')  %>%
-  as.data.frame()
-```
-
-```{r}
-merge(x=carDf,y=meanCreditScoreDf,by=c("DRIVING_EXPERIENCE", "VEHICLE_OWNERSHIP", "MARRIED"), all.x=TRUE) %>%
-  mutate(CREDIT_SCORE = ifelse(is.na(CREDIT_SCORE.x), CREDIT_SCORE.y, CREDIT_SCORE.x))
+oldANNUAL <- carDf$ANNUAL_MILEAGE
+oldCREDIT <- carDf$CREDIT_SCORE
 ```
 
 
 ```{r}
-carDf <- merge(x=carDf,y=meanCreditScoreDf,by=c("DRIVING_EXPERIENCE", "VEHICLE_OWNERSHIP", "MARRIED"), all.x=TRUE) %>%
-  mutate(CREDIT_SCORE = ifelse(is.na(CREDIT_SCORE.x), CREDIT_SCORE.y, CREDIT_SCORE.x)) # %>%
-  #select(AGE, GENDER, RACE, DRIVING_EXPERIENCE, EDUCATION, INCOME, CREDIT_SCORE.x, CREDIT_SCORE.Y, CREDIT_SCORE, VEHICLE_OWNERSHIP,
-         #VEHICLE_YEAR, MARRIED, CHILDREN, POSTAL_CODE, ANNUAL_MILEAGE, SPEEDING_VIOLATIONS, DUIS,
-         #PAST_ACCIDENTS, OUTCOME)
-  #select(AGE, GENDER, RACE, DRIVING_EXPERIENCE, EDUCATION, INCOME, CREDIT_SCORE, VEHICLE_OWNERSHIP,
-  #       VEHICLE_YEAR, MARRIED, CHILDREN, POSTAL_CODE, ANNUAL_MILEAGE, SPEEDING_VIOLATIONS, DUIS,
-  #       PAST_ACCIDENTS, OUTCOME)
+carDfMissF <- missForest(carDf)
 ```
-
-Compare the distribution of the CREDIT_SCORE with the filled in NA values and without.
 
 ```{r}
-creditScoreValues <- data.frame(old = oldCreditScore, new = carDf$CREDIT_SCORE)
+carDfMissF$OOBerror
 ```
-
-
-
-
-
-We will use MICE algorithm to predict some values for the ANNUAL_MILEAGE.
 
 ```{r}
-annualMileageDependentColumns <- corrDf %>% 
-  as.data.frame() %>% 
-  select(ANNUAL_MILEAGE) %>% 
-  filter(ANNUAL_MILEAGE >= 0.10)
-
-annualMileageDependentColumns
+carDfMissF$ximp %>% 
+  ggplot() +
+  geom_density(aes(x = CREDIT_SCORE)) +
+  geom_density(aes(x = oldCREDIT), color="blue", linetype="dashed", na.rm = TRUE) +
+  labs(title = "People claiming a loan vs people not claiming a loan", x = "", y = "Amount")
 ```
 
+```{r}
+carDfMissF$ximp$ANNUAL_MILEAGE <- as.numeric(carDfMissF$ximp$ANNUAL_MILEAGE)
+
+carDfMissF$ximp %>% 
+  ggplot() +
+  geom_density(aes(x = ANNUAL_MILEAGE)) +
+  geom_density(aes(x = oldANNUAL), color="blue", linetype="dashed", na.rm = TRUE) +
+  labs(title = "People claiming a loan vs people not claiming a loan", x = "ANNUAL_MILEAGE in (km) - 1 km", y = "Amount")
+```
+
+Since we decided to accept the filled NA values by the missForest algorithm, we will save them in the original data set carDf.
+
+```{r}
+carDf <- carDfMissF$ximp
+rm(carDfMissF)
+```
+
+Now we have filled the NA's values cells, we can study the data a little more. We will do some plots to visualize what we are working with.
+
+We need to solve the problem of data set being imbalanced. We will need to handle this problem later.
 
 ```{r}
 carDf %>%
-  ggplot(aes(x=factor(OUTCOME))) +
-  geom_bar(stat="count") + 
-  scale_x_discrete(breaks=c("0","1")) +
-  labs(title="People claiming a loan vs people not claiming a loan", x= "", y = "Amount")
+  ggplot(aes(x = factor(OUTCOME))) +
+  geom_bar(stat = "count") + 
+  scale_x_discrete(breaks = c("0","1")) +
+  labs(title = "People claiming a loan vs people not claiming a loan", x = "", y = "Amount")
 ```
 
+```{r}
+normalizedVector <- carDf %>% 
+  select(OUTCOME) %>% 
+  group_by(OUTCOME) %>% 
+  summarise(count = n(),
+            .groups = 'drop') %>% 
+  as.data.frame() %>% 
+  select(count)
+```
+
+# DRIVING_EXPERIENCE
+
+```{r}
+carDf %>% 
+  select(OUTCOME, DRIVING_EXPERIENCE) %>% 
+  group_by(OUTCOME, DRIVING_EXPERIENCE) %>% 
+  summarise(count = n(),
+            .groups = 'drop') %>% 
+  as.data.frame() %>% 
+  mutate(normalizedCount = case_when(OUTCOME == 0 ~ (count / normalizedVector[1, ] * 100), 
+                                   TRUE ~ (count/ normalizedVector[2, ] * 100))) %>% 
+  ggplot(aes(x = factor(OUTCOME), y = normalizedCount, fill = DRIVING_EXPERIENCE)) +
+  geom_bar(position = "dodge", stat="identity") +
+  scale_x_discrete(breaks = c(0, 1), labels = c("FALSE","TRUE")) +
+  scale_fill_discrete(labels = c(labelDRIVING_EXPERIENCE), name = "Years of driving experience") +
+  labs(title = "Number of violations for each category", x = "", y = "Amount")
+```
+
+# VEHICLE_OWNERSHIP
+
+```{r}
+carDf %>% 
+  select(OUTCOME, VEHICLE_OWNERSHIP) %>% 
+  group_by(OUTCOME, VEHICLE_OWNERSHIP) %>% 
+  summarise(count = n(),
+            .groups = 'drop') %>% 
+  as.data.frame() %>% 
+  mutate(normalizedCount = case_when(OUTCOME == 0 ~ (count / normalizedVector[1, ] * 100), 
+                                   TRUE ~ (count/ normalizedVector[2, ] * 100))) %>%
+  ggplot(aes(x = factor(OUTCOME), y = normalizedCount, fill = factor(VEHICLE_OWNERSHIP))) +
+  geom_bar(position = "dodge", stat="identity") +
+  scale_x_discrete(breaks = c(0, 1), labels = c("FALSE","TRUE")) +
+  scale_fill_discrete(labels = c("Not the owner of the car", "Owner of the car"), name = "Owner of the car ?") +
+  labs(title = "Number of violations for each category", x = "", y = "Amount")
+```
+
+# CREDIT_SCORE
+
+```{r}
+carDf %>%  
+  ggplot(aes(x = CREDIT_SCORE)) + 
+  stat_density(fill = "#69b3a2", color = "#e9ecef", alpha = 0.8) +
+  geom_boxplot(fill = "#69b3a2", width = .10, alpha = 0.5) +
+  labs(title = "Density of the credit score", x = "Credit score values", y = "Amount")
+```
+
+```{r}
+carDf %>%
+  ggplot(aes(x = factor(OUTCOME), y = CREDIT_SCORE)) + 
+  geom_violin() +
+  geom_boxplot(width = 0.1, alpha = 0.05) +
+  scale_x_discrete(name = "Claimed loan", labels = c("FALSE", "TRUE")) +
+  labs(title = "Credit score vs Outcome", x = "", y = "Credit score")
+```
+
+# PAST_ACCIDENTS
+
+Here we study the distributions of the violations columns: SPEEDING_VIOLATIONS, DUIS, PAST_ACCIDENTS. We can see they follow a power law distribution.
 
 ```{r}
 carDf %>%
@@ -213,6 +283,7 @@ carDf %>%
     geom_bar(alpha = 0.8)
 ```
 
+Now let us how it
 
 ```{r}
 carDf %>% 
@@ -225,25 +296,114 @@ carDf %>%
   ggplot(aes(x = factor(OUTCOME), y = count, fill = categories)) +
   geom_bar(position = "dodge", stat="identity") +
   scale_x_discrete(breaks = c(0, 1), labels = c("FALSE","TRUE")) +
+  scale_fill_discrete(labels = c("Drink and driving", "Accidents", "Speeding"), name = "Violations") +
   labs(title = "Number of violations for each category", x = "", y = "Amount")
 ```
 
 ```{r}
-summary(carDf$CREDIT_SCORE)
+labelVEHICLE_YEAR
+```
+
+
+# VEHICLE_YEAR
+
+```{r}
+carDf %>% 
+  select(OUTCOME, VEHICLE_YEAR) %>% 
+  group_by(OUTCOME, VEHICLE_YEAR) %>% 
+  summarise(count = n(),
+            .groups = 'drop') %>% 
+  as.data.frame() %>% 
+  mutate(normalizedCount = case_when(OUTCOME == 0 ~ (count / normalizedVector[1, ] * 100), 
+                                   TRUE ~ (count/ normalizedVector[2, ] * 100))) %>%
+  ggplot(aes(x = factor(OUTCOME), y = normalizedCount, fill = factor(VEHICLE_YEAR))) +
+  geom_bar(position = "dodge", stat="identity") +
+  scale_x_discrete(breaks = c(0, 1), labels = c("FALSE","TRUE")) +
+  scale_fill_discrete(labels = c(labelVEHICLE_YEAR), name = "Year of bought Vehicle") +
+  labs(title = "Number of violations for each category", x = "", y = "Amount")
+```
+
+# Balance the dataset
+
+Before we talk about balancing the dataset, we will first split the data into training and testing. Later we will balance the training data.
+
+```{r}
+carDf$AGE <- as.numeric(carDf$AGE)
+carDf$GENDER <- as.numeric(carDf$GENDER)
+carDf$RACE <- as.numeric(carDf$RACE)
+carDf$DRIVING_EXPERIENCE <- as.numeric(carDf$DRIVING_EXPERIENCE)
+carDf$EDUCATION <- as.numeric(carDf$EDUCATION)
+carDf$INCOME <- as.numeric(carDf$INCOME)
+carDf$VEHICLE_YEAR <- as.numeric(carDf$VEHICLE_YEAR)
+carDf$VEHICLE_TYPE <- as.numeric(carDf$VEHICLE_TYPE)
+carDf$ANNUAL_MILEAGE <- as.numeric(carDf$ANNUAL_MILEAGE)
 ```
 
 
 ```{r}
-carDf$CREDIT_SCORE <- replace(carDf$CREDIT_SCORE, is.na(carDf$CREDIT_SCORE), 0)
+set.seed(42)
+
+sample <- sample(c(TRUE, FALSE), nrow(carDf), replace=TRUE, prob=c(0.8,0.2))
+train <- carDf[sample, ]
+test <- carDf[!sample, ]
+
+rm(sample)
 ```
 
 ```{r}
-carDf %>%  
-  ggplot(aes(x = CREDIT_SCORE)) + 
-  stat_density(fill = "#69b3a2", color = "#e9ecef", alpha = 0.8) +
-  geom_boxplot(fill = "#69b3a2", width = .10, alpha = 0.5) +
-  labs(title = "Density of the credit score", x = "Credit score values", y = "Amount")
+train %>%
+  ggplot(aes(x = factor(OUTCOME))) +
+  geom_bar(stat = "count") + 
+  scale_x_discrete(breaks = c("0","1")) +
+  labs(title = "People claiming a loan vs people not claiming a loan", x = "", y = "Amount")
 ```
+
+```{r}
+newDf <- SMOTE(train[c(1:17, 19)], train[18], K = 5, dup_size = 0)
+```
+
+```{r}
+newDf$data  %>%
+  ggplot(aes(x = factor(class))) +
+  geom_bar(stat = "count") + 
+  scale_x_discrete(breaks = c("0","1")) +
+  labs(title = "People claiming a loan vs people not claiming a loan", x = "", y = "Amount")
+```
+
+```{r}
+smoteDf <- newDf$data
+```
+
+```{r}
+unique(smoteDf$GENDER)
+```
+
+
+```{r}
+smoteDf$AGE <- factor(smoteDf$AGE)
+smoteDf$GENDER <- factor(smoteDf$GENDER)
+smoteDf$RACE <- factor(smoteDf$RACE)
+smoteDf$DRIVING_EXPERIENCE <- factor(smoteDf$DRIVING_EXPERIENCE)
+smoteDf$EDUCATION <- factor(smoteDf$EDUCATION)
+smoteDf$INCOME <- factor(smoteDf$INCOME)
+smoteDf$VEHICLE_YEAR <- factor(smoteDf$VEHICLE_YEAR)
+smoteDf$VEHICLE_TYPE <- factor(smoteDf$VEHICLE_TYPE)
+smoteDf$ANNUAL_MILEAGE <- factor(smoteDf$ANNUAL_MILEAGE)
+```
+
+
+# Models
+
+## Random Forest
+
+```{r}
+rf <- randomForest(as.factor(class) ~ ., data=smoteDf, proximity=TRUE) 
+print(rf)
+```
+
+
+
+# USELESS
 
 ```{r, warning=FALSE}
 carDf %>% 
@@ -271,32 +431,7 @@ carDf %>%
   
 ```
 
-```{r}
-carDf %>%
-  ggplot(aes(x = factor(OUTCOME), y = CREDIT_SCORE)) + 
-  geom_violin() +
-  geom_boxplot(width = 0.1, alpha = 0.05) +
-  scale_x_discrete(name = "Claimed loan", labels = c("FALSE", "TRUE")) +
-  labs(title = "Credit score vs Outcome", x = "", y = "Credit score")
-```
-
-```{r}
-summary(carDf)
-```
-
-```{r}
-carDf$ANNUAL_MILEAGE <- replace(carDf$ANNUAL_MILEAGE, is.na(carDf$ANNUAL_MILEAGE), 0)
-```
 
 
 
-
-
-
-```{python}
-import matplotlib
-import seaborn
-
-#print(carDf)
-```
 
