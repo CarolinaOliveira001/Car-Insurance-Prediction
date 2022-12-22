@@ -13,9 +13,10 @@ library(RColorBrewer)
 library(tidyverse)
 library(reshape2)
 library(missForest)
-library(smotefamily)
 library(randomForest)
 library(caret)
+library(e1071)
+library(caTools)
 ```
 
 The dataset chosen was the Car Insurance Claim dataset.
@@ -147,10 +148,11 @@ carDf$ANNUAL_MILEAGE <- factor(carDf$ANNUAL_MILEAGE)
 carDf$ANNUAL_MILEAGE <- as.numeric(carDf$ANNUAL_MILEAGE)
 f <- function(x) x + 1
 carDf <- cbind(carDf[c(1:13, 15:19)], apply(carDf[14],2, f))
+carDf$ANNUAL_MILEAGE <- factor(carDf$ANNUAL_MILEAGE)
 ```
 
 ```{r}
-oldANNUAL <- carDf$ANNUAL_MILEAGE
+oldANNUAL <- as.numeric(carDf$ANNUAL_MILEAGE)
 oldCREDIT <- carDf$CREDIT_SCORE
 ```
 
@@ -328,15 +330,16 @@ carDf %>%
 Before we talk about balancing the dataset, we will first split the data into training and testing. Later we will balance the training data.
 
 ```{r}
-carDf$AGE <- as.numeric(carDf$AGE)
-carDf$GENDER <- as.numeric(carDf$GENDER)
-carDf$RACE <- as.numeric(carDf$RACE)
-carDf$DRIVING_EXPERIENCE <- as.numeric(carDf$DRIVING_EXPERIENCE)
-carDf$EDUCATION <- as.numeric(carDf$EDUCATION)
-carDf$INCOME <- as.numeric(carDf$INCOME)
-carDf$VEHICLE_YEAR <- as.numeric(carDf$VEHICLE_YEAR)
-carDf$VEHICLE_TYPE <- as.numeric(carDf$VEHICLE_TYPE)
-carDf$ANNUAL_MILEAGE <- as.numeric(carDf$ANNUAL_MILEAGE)
+carDf$AGE <- factor(carDf$AGE)
+carDf$GENDER <- factor(carDf$GENDER)
+carDf$RACE <- factor(carDf$RACE)
+carDf$DRIVING_EXPERIENCE <- factor(carDf$DRIVING_EXPERIENCE)
+carDf$EDUCATION <- factor(carDf$EDUCATION)
+carDf$INCOME <- factor(carDf$INCOME)
+carDf$VEHICLE_YEAR <- factor(carDf$VEHICLE_YEAR)
+carDf$VEHICLE_TYPE <- factor(carDf$VEHICLE_TYPE)
+carDf$ANNUAL_MILEAGE <- factor(carDf$ANNUAL_MILEAGE)
+carDf$OUTCOME <- factor(carDf$OUTCOME)
 ```
 
 
@@ -358,37 +361,25 @@ train %>%
   labs(title = "People claiming a loan vs people not claiming a loan", x = "", y = "Amount")
 ```
 
+
 ```{r}
-newDf <- SMOTE(train[c(1:17, 19)], train[18], K = 5, dup_size = 0)
+set.seed(9560)
+
+up_train <- upSample(x = train[, -18], y = train$OUTCOME)                         
+table(up_train$Class) 
 ```
 
 ```{r}
-newDf$data  %>%
-  ggplot(aes(x = factor(class))) +
+train <- up_train
+rm(up_train)
+```
+
+```{r}
+train %>%
+  ggplot(aes(x = factor(Class))) +
   geom_bar(stat = "count") + 
   scale_x_discrete(breaks = c("0","1")) +
   labs(title = "People claiming a loan vs people not claiming a loan", x = "", y = "Amount")
-```
-
-```{r}
-smoteDf <- newDf$data
-```
-
-```{r}
-unique(smoteDf$GENDER)
-```
-
-
-```{r}
-smoteDf$AGE <- factor(smoteDf$AGE)
-smoteDf$GENDER <- factor(smoteDf$GENDER)
-smoteDf$RACE <- factor(smoteDf$RACE)
-smoteDf$DRIVING_EXPERIENCE <- factor(smoteDf$DRIVING_EXPERIENCE)
-smoteDf$EDUCATION <- factor(smoteDf$EDUCATION)
-smoteDf$INCOME <- factor(smoteDf$INCOME)
-smoteDf$VEHICLE_YEAR <- factor(smoteDf$VEHICLE_YEAR)
-smoteDf$VEHICLE_TYPE <- factor(smoteDf$VEHICLE_TYPE)
-smoteDf$ANNUAL_MILEAGE <- factor(smoteDf$ANNUAL_MILEAGE)
 ```
 
 
@@ -397,8 +388,80 @@ smoteDf$ANNUAL_MILEAGE <- factor(smoteDf$ANNUAL_MILEAGE)
 ## Random Forest
 
 ```{r}
-rf <- randomForest(as.factor(class) ~ ., data=smoteDf, proximity=TRUE) 
+rf <- randomForest(as.factor(Class) ~ ., data=train, proximity=TRUE) 
 print(rf)
+```
+
+```{r}
+p1 <- predict(rf, train)
+confusionMatrix(p1, train$Class)
+```
+
+## Support Vector Machine
+
+```{r}
+svm_model <- svm(as.factor(Class) ~ ., data=train, kernel = "radial", cost = 5)
+print(svm_model)
+```
+
+```{r}
+p2 <- predict(svm_model, train)
+confusionMatrix(p2, train$Class)
+```
+
+## Naïve Bayes
+
+```{r}
+nBayes <- naiveBayes(as.factor(Class) ~ ., data=train)
+print(nBayes)
+```
+
+```{r}
+p3 <- predict(nBayes, train)
+confusionMatrix(p3, train$Class)
+```
+
+As we can see from the accuracy, we will rank the best model to worst models.
+1. Random Forest
+2. Support Vector Machine
+3. Naïve Bayes
+
+So we decided to continue with the random forest model.
+
+# Cross-validation
+
+```{r}
+train[, c(1:18)]
+```
+
+```{r}
+repeat_cv <- trainControl(method='repeatedcv', number=5, repeats=3)
+
+forest <- train(
+        as.factor(Class)~., 
+        data=train, 
+        method='rf', 
+        trControl=repeat_cv,
+        metric='Accuracy')
+```
+
+```{r}
+print(forest)
+```
+
+```{r}
+sapply(test, class)
+```
+
+```{r}
+sapply(train, class)
+```
+
+
+
+```{r}
+p4 <- predict(forest, test)
+confusionMatrix(p4, test$OUTCOME)
 ```
 
 

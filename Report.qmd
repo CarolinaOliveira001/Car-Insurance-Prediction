@@ -1,0 +1,16 @@
+---
+title: "Car insurance claim"
+author: "Carolina OLIVEIRA COSTA"
+format: html
+editor: visual
+---
+
+# Presentation of the data and the associated insurance problem
+
+Insurance companies have many problems to solve: One of them would be t
+
+# Preliminary analysis of the data
+
+# Brief description of the models used
+
+# Analysis of the results and conclusion
