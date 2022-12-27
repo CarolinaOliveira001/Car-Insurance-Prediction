@@ -55,6 +55,43 @@ Plots:
 - boxplot of credit score vs income
 
 
+Website:
+
+https://www.analyticsvidhya.com/blog/2016/03/tutorial-powerful-packages-imputing-missing-values/#:~:text=MICE%20(Multivariate%20Imputation%20via%20Chained,of%20uncertainty%20in%20missing%20values.
+
+https://www.analyticsvidhya.com/blog/2016/03/practical-guide-deal-imbalanced-classification-problems/
+
+https://www.r-bloggers.com/2018/04/classification-get-the-balance-right/
+
+https://www.r-bloggers.com/2021/04/random-forest-in-r/#:~:text=Random%20Forest%20in%20R%2C%20Random,to%20identify%20the%20important%20attributes.
+
+https://topepo.github.io/caret/subsampling-for-class-imbalances.html
+
+https://www.geeksforgeeks.org/naive-bayes-classifier-in-r-programming/
+
+https://www.r-bloggers.com/2021/04/naive-bayes-classification-in-r/
+
+https://www.edureka.co/blog/naive-bayes-in-r/
+
+https://uc-r.github.io/naive_bayes
+
+https://www.datacamp.com/tutorial/support-vector-machines-r
+
+https://www.geeksforgeeks.org/classifying-data-using-support-vector-machinessvms-in-r/
+
+https://rpubs.com/jvaldeleon/forest_repeat_cv
+
+https://rstudio-pubs-static.s3.amazonaws.com/71575_4068e2e6dc3d46a785ad7886426c37db.html
+
+https://www.guru99.com/r-random-forest-tutorial.html
+
+http://www.sthda.com/english/wiki/visualize-correlation-matrix-using-correlogram
+
+http://www.sthda.com/english/wiki/ggplot2-quick-correlation-matrix-heatmap-r-software-and-data-visualization
+
+http://www.sthda.com/english/wiki/ggcorrplot-visualization-of-a-correlation-matrix-using-ggplot2
+
+https://r-charts.com/correlation/
 
 
 

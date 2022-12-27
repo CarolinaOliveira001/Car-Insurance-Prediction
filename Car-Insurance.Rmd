@@ -2,7 +2,9 @@
 title: "Car Insurance Project"
 author: "Carolina Costa"
 date: "2022-12-12"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE, warning=FALSE}
@@ -17,6 +19,7 @@ library(randomForest)
 library(caret)
 library(e1071)
 library(caTools)
+library(mltools)
 ```
 
 The dataset chosen was the Car Insurance Claim dataset.
@@ -43,21 +46,21 @@ sapply(carDf, class)
 ```
 
 ```{r}
-carDf$AGE <- as.numeric(factor(carDf$AGE,levels = c(unique(carDf$AGE)),labels = c(0:(length(unique(carDf$AGE)) - 1))))
+carDf$AGE <- as.numeric(factor(carDf$AGE,levels = c("16-25", "26-39", "40-64", "65+")))
 
-carDf$GENDER <- as.numeric(factor(carDf$GENDER,levels = c(unique(carDf$GENDER)),labels = c(0:(length(unique(carDf$GENDER)) - 1))))
+carDf$GENDER <- as.numeric(factor(carDf$GENDER,labels = c("male", "female")))
 
-carDf$RACE <- as.numeric(factor(carDf$RACE,levels = c(unique(carDf$RACE)),labels = c(0:(length(unique(carDf$RACE)) - 1))))
+carDf$RACE <- as.numeric(factor(carDf$RACE,labels = c("minority", "majority")))
 
-carDf$DRIVING_EXPERIENCE <- as.numeric(factor(carDf$DRIVING_EXPERIENCE,levels = c(unique(carDf$DRIVING_EXPERIENCE)),labels = c(0:(length(unique(carDf$DRIVING_EXPERIENCE)) - 1))))
+carDf$DRIVING_EXPERIENCE <- as.numeric(factor(carDf$DRIVING_EXPERIENCE,labels = c("0-9y", "10-19y", "20-29y", "30y+")))
 
-carDf$EDUCATION <- as.numeric(factor(carDf$EDUCATION,levels = c(unique(carDf$EDUCATION)),labels = c(0:(length(unique(carDf$EDUCATION)) - 1))))
+carDf$EDUCATION <- as.numeric(factor(carDf$EDUCATION,labels = c("none", "high school", "university")))
 
-carDf$INCOME <- as.numeric(factor(carDf$INCOME,levels = c(unique(carDf$INCOME)),labels = c(0:(length(unique(carDf$INCOME)) - 1))))
+carDf$INCOME <- as.numeric(factor(carDf$INCOME,labels = c("poverty", "working class", "middle class", "upper class")))
 
-carDf$VEHICLE_YEAR <- as.numeric(factor(carDf$VEHICLE_YEAR,levels = c(unique(carDf$VEHICLE_YEAR)),labels = c(0:(length(unique(carDf$VEHICLE_YEAR)) - 1))))
+carDf$VEHICLE_YEAR <- as.numeric(factor(carDf$VEHICLE_YEAR,labels = c("before 2015", "after 2015")))
 
-carDf$VEHICLE_TYPE <- as.numeric(factor(carDf$VEHICLE_TYPE,levels = c(unique(carDf$VEHICLE_TYPE)),labels = c(0:(length(unique(carDf$VEHICLE_TYPE)) - 1))))
+carDf$VEHICLE_TYPE <- as.numeric(factor(carDf$VEHICLE_TYPE,labels = c("sedan","sports_car")))
 ```
 
 We summarise the data set to have an overview of each column.
@@ -83,6 +86,7 @@ corrDf <- carDf %>%
 ```
 
 ```{r}
+png("corrDfPlot.png")
 corrDf %>% 
   melt() %>% 
   ggplot(aes(x=Var1, y=Var2, fill=value)) + 
@@ -94,6 +98,7 @@ corrDf %>%
   coord_fixed() + 
   scale_size(range = c(0.2, 5)) +
   geom_text(aes(Var2, Var1, label = value), color = "black", size = 1.5) +
+  labs(title = "Correlation plot between each column") +
   theme(axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         panel.grid.major = element_blank(),
@@ -101,7 +106,8 @@ corrDf %>%
         panel.background = element_blank(),
         axis.ticks = element_blank(),
         legend.justification = c(1, 0),
-  legend.position = "right")
+        legend.position = "right")
+dev.off()
 ```
 
 First, let us see the most correlated features with the OUTCOME column.
@@ -190,9 +196,58 @@ carDf <- carDfMissF$ximp
 rm(carDfMissF)
 ```
 
+```{r}
+carDf<- carDf %>% 
+  mutate(VEHICLE_TYPE = case_when(VEHICLE_TYPE == 1 ~ 'sedan',
+                                  VEHICLE_TYPE == 2 ~ 'sport_car'))
+```
+
+```{r}
+carDf$AGE <- as.numeric(carDf$AGE)
+
+carDf$GENDER <- as.numeric(carDf$GENDER)
+
+carDf$RACE <- as.numeric(carDf$RACE)
+
+carDf$DRIVING_EXPERIENCE <- as.numeric(carDf$DRIVING_EXPERIENCE)
+
+carDf$EDUCATION <- as.numeric(carDf$EDUCATION)
+
+carDf$INCOME <- as.numeric(carDf$INCOME)
+
+carDf$VEHICLE_YEAR <- as.numeric(carDf$VEHICLE_YEAR)
+```
+
+```{r}
+sapply(carDf, class)
+```
+
+
+```{r}
+carDf$VEHICLE_TYPE <- factor(carDf$VEHICLE_TYPE)
+dummy <- dummyVars(" ~ .", data=carDf)
+carDf <- data.frame(predict(dummy, newdata=carDf))
+
+rm(dummy)
+```
+
 Now we have filled the NA's values cells, we can study the data a little more. We will do some plots to visualize what we are working with.
 
 We need to solve the problem of data set being imbalanced. We will need to handle this problem later.
+
+```{r}
+carDf$AGE <- factor(carDf$AGE)
+carDf$GENDER <- factor(carDf$GENDER)
+carDf$RACE <- factor(carDf$RACE)
+carDf$DRIVING_EXPERIENCE <- factor(carDf$DRIVING_EXPERIENCE)
+carDf$EDUCATION <- factor(carDf$EDUCATION)
+carDf$INCOME <- factor(carDf$INCOME)
+carDf$VEHICLE_YEAR <- factor(carDf$VEHICLE_YEAR)
+carDf$VEHICLE_TYPE.sedan <- factor(carDf$VEHICLE_TYPE.sedan)
+carDf$VEHICLE_TYPE.sport_car <- factor(carDf$VEHICLE_TYPE.sport_car)
+carDf$ANNUAL_MILEAGE <- factor(carDf$ANNUAL_MILEAGE)
+carDf$OUTCOME <- factor(carDf$OUTCOME)
+```
 
 ```{r}
 carDf %>%
@@ -212,6 +267,8 @@ normalizedVector <- carDf %>%
   select(count)
 ```
 
+
+
 # DRIVING_EXPERIENCE
 
 ```{r}
@@ -226,8 +283,10 @@ carDf %>%
   ggplot(aes(x = factor(OUTCOME), y = normalizedCount, fill = DRIVING_EXPERIENCE)) +
   geom_bar(position = "dodge", stat="identity") +
   scale_x_discrete(breaks = c(0, 1), labels = c("FALSE","TRUE")) +
-  scale_fill_discrete(labels = c(labelDRIVING_EXPERIENCE), name = "Years of driving experience") +
-  labs(title = "Number of violations for each category", x = "", y = "Amount")
+  #scale_fill_brewer(palette = "RdYlbu") +
+  scale_fill_discrete(labels = c("0-9", "10-19", "20-29", "30+"), name = "Years of driving experience") +
+  labs(title = "Number of violations for each category", x = "", y = "Amount") +
+  theme_classic()
 ```
 
 # VEHICLE_OWNERSHIP
@@ -260,11 +319,12 @@ carDf %>%
 
 ```{r}
 carDf %>%
-  ggplot(aes(x = factor(OUTCOME), y = CREDIT_SCORE)) + 
+  ggplot(aes(x = factor(OUTCOME), y = CREDIT_SCORE, fill = factor(OUTCOME))) + 
   geom_violin() +
   geom_boxplot(width = 0.1, alpha = 0.05) +
   scale_x_discrete(name = "Claimed loan", labels = c("FALSE", "TRUE")) +
-  labs(title = "Credit score vs Outcome", x = "", y = "Credit score")
+  labs(title = "Credit score vs Outcome", x = "", y = "Credit score",
+       legend = element_blank())
 ```
 
 # PAST_ACCIDENTS
@@ -329,19 +389,6 @@ carDf %>%
 
 Before we talk about balancing the dataset, we will first split the data into training and testing. Later we will balance the training data.
 
-```{r}
-carDf$AGE <- factor(carDf$AGE)
-carDf$GENDER <- factor(carDf$GENDER)
-carDf$RACE <- factor(carDf$RACE)
-carDf$DRIVING_EXPERIENCE <- factor(carDf$DRIVING_EXPERIENCE)
-carDf$EDUCATION <- factor(carDf$EDUCATION)
-carDf$INCOME <- factor(carDf$INCOME)
-carDf$VEHICLE_YEAR <- factor(carDf$VEHICLE_YEAR)
-carDf$VEHICLE_TYPE <- factor(carDf$VEHICLE_TYPE)
-carDf$ANNUAL_MILEAGE <- factor(carDf$ANNUAL_MILEAGE)
-carDf$OUTCOME <- factor(carDf$OUTCOME)
-```
-
 
 ```{r}
 set.seed(42)
@@ -362,10 +409,11 @@ train %>%
 ```
 
 
+
 ```{r}
 set.seed(9560)
 
-up_train <- upSample(x = train[, -18], y = train$OUTCOME)                         
+up_train <- upSample(x = train[, - 19], y = train$OUTCOME)                         
 table(up_train$Class) 
 ```
 
@@ -388,13 +436,13 @@ train %>%
 ## Random Forest
 
 ```{r}
-rf <- randomForest(as.factor(Class) ~ ., data=train, proximity=TRUE) 
+rf <- randomForest(Class ~ ., data=train, proximity=TRUE) 
 print(rf)
 ```
 
 ```{r}
 p1 <- predict(rf, train)
-confusionMatrix(p1, train$Class)
+confusionMatrix(p1, train$Class, positive = "1")
 ```
 
 ## Support Vector Machine
@@ -406,7 +454,7 @@ print(svm_model)
 
 ```{r}
 p2 <- predict(svm_model, train)
-confusionMatrix(p2, train$Class)
+confusionMatrix(p2, train$Class, positive = "1")
 ```
 
 ## Naïve Bayes
@@ -418,7 +466,7 @@ print(nBayes)
 
 ```{r}
 p3 <- predict(nBayes, train)
-confusionMatrix(p3, train$Class)
+confusionMatrix(p3, train$Class, positive = "1")
 ```
 
 As we can see from the accuracy, we will rank the best model to worst models.
@@ -431,7 +479,7 @@ So we decided to continue with the random forest model.
 # Cross-validation
 
 ```{r}
-train[, c(1:18)]
+train[, c(1:19)]
 ```
 
 ```{r}
@@ -461,7 +509,7 @@ sapply(train, class)
 
 ```{r}
 p4 <- predict(forest, test)
-confusionMatrix(p4, test$OUTCOME)
+confusionMatrix(p4, test$OUTCOME, positive = "1")
 ```
 
 
