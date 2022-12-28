@@ -33,9 +33,29 @@ The multiple categorical columns have to be converted to numbers before fitting 
 
 ## Missing values
 
-Furthermore, there a significant value of correlation between the outcome and both credit score and the annual mileage. The more logical next step is to fill the missing values in this 2 previous columns. For that there is an algorithm in R, call missForest. It uses a random forest algorithm to predict all the missing values. For more details how the random forest algorithm works, an explanation is given in next section.
+Furthermore, there a significant value of correlation between the outcome and both credit score and the annual mileage. The more logical next step is to fill the missing values in this 2 previous columns. For that there is an algorithm in R, call missForest. It uses a random forest algorithm to predict all the missing values. For more details how the random forest algorithm works, an explanation is given in next section. Furthermore, it can handle both categorical and numerical columns well. After checking the distribution of the data for each column before and after generating data, we decided to accept the generated data since the distribution maintained its structure.
 
 ## Plots
+
+We have so many columns, but there are some columns more important than others. That is why we will only focus on the 3 most correlated column to the predicting column.
+
+The first column is the years of driving experience. We already talked about this feature before, so we can immediately to the plot:
+
+PLOOOOOOOOOOOOOOOOOOOOOOT
+
+It is interesting to see that the less years of driving experience one has, the more likely it is to claimed a loan.
+
+Moving on to the ownership of the vehicle, it is a binary categorical column. The value 1 represents that the data is about the owner of the car and value 0 represent otherwise. There exist many reason to pay an insurance plan for the car even when one doesn't own the car, e.g. parents paying insurance for their children etc.
+
+PLOOOOOOOOOOOOOOOOOOOOOOOOT
+
+This plot shows some shocking information. The probability of the owner of the vehicle get a loan is less than the non-owner of the vehicle.
+
+Moreover, the column known to have an influence on the decision of the insurer to give a loan or not is the credit score. The credit score is between 0 and 1. The closer the credit score is to 1, the more likely it is to get a loan. But the following plot shows us the opposite.
+
+PLLLLLLLLLLLLLLLLLOOOOOOOOOOT
+
+We finished the data analysis, the next step is the model selection and training the model.
 
 # Brief description of the models used
 

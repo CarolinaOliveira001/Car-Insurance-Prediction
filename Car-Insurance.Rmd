@@ -21,6 +21,7 @@ library(e1071)
 library(caTools)
 library(mltools)
 library(xgboost)
+library(viridis) 
 ```
 
 The dataset chosen was the Car Insurance Claim dataset.
@@ -111,7 +112,6 @@ corrDf <- carDf %>%
 ```
 
 ```{r}
-png("corrDfPlot.png")
 corrDf %>% 
   melt() %>% 
   ggplot(aes(x=Var1, y=Var2, fill=value)) + 
@@ -132,7 +132,6 @@ corrDf %>%
         axis.ticks = element_blank(),
         legend.justification = c(1, 0),
         legend.position = "right")
-dev.off()
 ```
 
 First, let us see the most correlated features with the OUTCOME column.
@@ -315,9 +314,8 @@ carDf %>%
   ggplot(aes(x = factor(OUTCOME), y = normalizedCount, fill = DRIVING_EXPERIENCE)) +
   geom_bar(position = "dodge", stat="identity") +
   scale_x_discrete(breaks = c(0, 1), labels = c("FALSE","TRUE")) +
-  #scale_fill_brewer(palette = "RdYlbu") +
-  scale_fill_discrete(labels = c("0-9", "10-19", "20-29", "30+"), name = "Years of driving experience") +
-  labs(title = "Number of violations for each category", x = "", y = "Amount") +
+  scale_fill_viridis(discrete = TRUE, alpha = 0.8, labels = c("0 - 9", "10 - 19", "20 +"), name = "Years of driving experience") +
+  labs(title = "Amount of each driving experience", x = "Claimed the loan", y = "Amount") +
   theme_classic()
 ```
 
@@ -335,8 +333,9 @@ carDf %>%
   ggplot(aes(x = factor(OUTCOME), y = normalizedCount, fill = factor(VEHICLE_OWNERSHIP))) +
   geom_bar(position = "dodge", stat="identity") +
   scale_x_discrete(breaks = c(0, 1), labels = c("FALSE","TRUE")) +
-  scale_fill_discrete(labels = c("Not the owner of the car", "Owner of the car"), name = "Owner of the car ?") +
-  labs(title = "Number of violations for each category", x = "", y = "Amount")
+  scale_fill_viridis(discrete = TRUE, alpha = 0.8, labels = c("Not the owner of the car", "Owner of the car"), name = "") +
+  labs(title = "Number of violations for each category", x = "Claimed the loan", y = "Amount") +
+  theme_classic()
 ```
 
 # CREDIT_SCORE
@@ -355,8 +354,10 @@ carDf %>%
   geom_violin() +
   geom_boxplot(width = 0.1, alpha = 0.05) +
   scale_x_discrete(name = "Claimed loan", labels = c("FALSE", "TRUE")) +
-  labs(title = "Credit score vs Outcome", x = "", y = "Credit score",
-       legend = element_blank())
+  scale_fill_viridis(discrete = TRUE, alpha = 0.6) +
+  labs(title = "Distribution of the credit score", x = "", y = "Credit score",
+       legend = element_blank()) + 
+  theme(legend.position="none")
 ```
 
 # PAST_ACCIDENTS
