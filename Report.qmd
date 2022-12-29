@@ -17,13 +17,15 @@ First, we have to note that there is $982$ missing data in the column of the cre
 
 Then we plot the correlation plot between each column leaving the ID out since the ID will not be a feature for the prediction.
 
-![](corrDfPlot.png "Figure 1: Correlation plot")
+![](CorrPlot.png)
 
 If we only the correlation values between the outcome column and all of the rest of the columns, we can get the columns with the most influence and with the least influence on the prediction. Those most influencing columns are the driving experience, vehicle ownership and credit score and the least influencing columns are race, age and education. We can forget about the 3 latter ones, but it is nice to visualize our data and this is what we are going to do later.
 
 ## Imbalanced categories
 
 Before taking any decision or making any change to the data set, we take a quick look at each column, more specifically the categorical columns, and its values. We plot the count of each category for each column. Most of the categorical columns seem to have very close in numbers for each category option, others can have very large numbers for each option. There is one column we will try to fix that problem. This column is the years of driving experience. Here is the plot:
+
+![](ImbalancedDrivingExperience.png)
 
 If we merge the categories "20-29y" and "30y+", we will get a count around the number of the other categories of the same column. We will name the new merged category "20y+".
 
@@ -41,19 +43,19 @@ We have so many columns, but there are some columns more important than others. 
 
 The first column is the years of driving experience. We already talked about this feature before, so we can immediately to the plot:
 
-PLOOOOOOOOOOOOOOOOOOOOOOT
+![](DrivingExperiencepng.png)
 
 It is interesting to see that the less years of driving experience one has, the more likely it is to claimed a loan.
 
 Moving on to the ownership of the vehicle, it is a binary categorical column. The value 1 represents that the data is about the owner of the car and value 0 represent otherwise. There exist many reason to pay an insurance plan for the car even when one doesn't own the car, e.g. parents paying insurance for their children etc.
 
-PLOOOOOOOOOOOOOOOOOOOOOOOOT
+![](Ownership.png)
 
 This plot shows some shocking information. The probability of the owner of the vehicle get a loan is less than the non-owner of the vehicle.
 
 Moreover, the column known to have an influence on the decision of the insurer to give a loan or not is the credit score. The credit score is between 0 and 1. The closer the credit score is to 1, the more likely it is to get a loan. But the following plot shows us the opposite.
 
-PLLLLLLLLLLLLLLLLLOOOOOOOOOOT
+![](DistributionCreditScore.png)
 
 We finished the data analysis, the next step is the model selection and training the model.
 
