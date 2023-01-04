@@ -7,7 +7,7 @@ editor: visual
 
 # Presentation of the data and the associated insurance problem
 
-The chosen data set is the Car Insurance Data from Kaggle. It is contains 19 columns and 10000 rows. The columns describe personal informations about the policyholder, like his/her ID number, age, gender, ... Some of them are categorical (e.g. Driving experiences and Race) and some numerical ones (eg. Credit score). However there is one column we would like to predict and that one is the column, which is named Outcome. The outcome is if the policyholder has claimed his/her loan or not. Many insurance companies offer many services than just insurance and lending money to someone is a very thoughtful task. Giving money to the wrong person can be a big loss depending on the amount loaned and the number of those "wrong" people since they will never give that money back. Hence it is also good to find a good model that can help the insurance company find who and who not lend money to.
+The chosen data set is the Car Insurance Data from Kaggle. It is contains 19 columns and 10000 rows. The columns describe personal informations about the policyholder, like his/her ID number, age, gender, ... Some of them are categorical (e.g. Driving experiences and Race) and some numerical ones (eg. Credit score). However there is one column we would like to predict and that one is the column which is named *outcome*. The outcome expresses if the policyholder has claimed his/her loan or not. Looking at this data through an insurance company eye, we can train some model to help us improving many services. Some of those services can be of course an insurance contract, but it can also be offers of financial products. By financial products, we mean lending money to someone. Giving money to the wrong person can be a big loss depending on the amount loaned and the number of those "wrong" people since they will probably not return that money back. Hence it is super important to find a good model that can help the insurance company find who and who not lend money to. As everyone knows, loans can be very profitable to the ones lending the money, because the interest rate of returns can be very high.
 
 # Preliminary analysis of the data
 
@@ -15,7 +15,7 @@ Before we start talking model, we will need to take a closer look at the data.
 
 First, we have to note that there is $982$ missing data in the column of the credit score and $957$ missing data in the column of the annual mileage. This issue has to dealt with later.
 
-Then we plot the correlation plot between each column leaving the ID out since the ID will not be a feature for the prediction.
+Then we plot the correlation plot between each column leaving the ID out since the ID is always unique. The ID is not helpful to predict, hence it doesn't make sense to fit it to the model.
 
 ![](CorrPlot.png)
 
@@ -65,28 +65,53 @@ After the analysis, we split the data into training and test. The training data 
 
 Machine Learning models don't well on data which contain an imbalanced size of the predicting class. After balancing the data with a function in R, called upSample, the data set gets duplicated rows for the minority class.
 
-The main task of the model is to do some classification prediction. So we will be able to pick the best performed model between three chosen model: Random Forest, Support Vector Machine and Naïve Bayes. We will explain shortly the models without going too much into details and then show their results.
+The main task of the model is to do some classification prediction. So we will be able to pick the best performed model between five chosen model: Random Forest, Support Vector Machine, Naïve Bayes, Gradient boosting machine and Extreme Gradient Boosting. We will explain shortly the models without going too much into details and then show their results.
+
+For each model, we did a cross-validation of 10-folds 5 times. K-Fold Cross-validation splits the training data into K subsets. At each iteration it evaluates the model at each different different subset after the model trained on the other 4 subsets. Each model created can have very different value for each parameter. The model with again the largest accuracy "wins".
+
+We train each model with our train data. Next we predict the testing data and evaluate this prediction.
 
 ## Random Forest
 
 The random forest algorithm is a collection of decision trees. One question one might ask now is what is a decision tree. The answer is: a decision tree is a tree where the nodes are the decisions and the edges are the tests. Those trees contain multiple levels at which one can do tests and decisions. Hence the random forest generates many trees based on different subsets of the training data with multiplication of the same rows. At the end, we will get one decision tree. The decisions will be chosen by majority vote for categorical and by the mean for continuous from the latter collection.
 
-We train the random forest algorithm with our train data. Next we predict the same training data and evaluate this prediction.
-
 ## Support Vector Machine
 
-The support vector machine, also named SVM, is another algorithm for classification. It tries to generate a line that separates the two predicting classes when drawn in a hyperplane.
+The support vector machine, also named SVM, is another algorithm for classification. It tries to generate a line (or hyperplane) that separates the two predicting classes.
 
-We train the SVM algorithm with our train data. Next we predict the same training data and evaluate this prediction.
+## AdaBoost
 
-## Naïve Bayes
+The AdaBoost algorithm uses Decisions Trees. The first iteration assigns each observation with equal weight. We evaluate the fitted tree. After that, new weight are assign to the each observation. Those observations more difficult to predict will get heavier weights and those observation more easy to predict will get lighter weights. And so on until it gets a tree with a small error which is exactly the difference between the predicted value and the actual value.
 
-First note that the Naïve Bayes algorithm assumes independence between all of features. It calculates the posterior probabilities using the Bayes Theorem for each outcome class. Then it predicts the class such that this probabilities is the largest.
+## Gradient Boosting machine
 
-We train the Naïve Bayes algorithm with our train data. Next we predict the same training data and evaluate this prediction.
+These algorithm is kind of an extension of the previous model. Instead of having the difference between the predicted value and the actual value, the algorithm can use any other loss function. The loss function is a measure indicating how good are model's coefficients are at fitting the underlying data.
 
 # Analysis of the results and conclusion
 
-As expected, the random forest algorithm has the best accuracy. Thus it will be the algorithm which we will perform a cross-validation with 5-folds. K-Fold Cross-validation splits the training data into K subsets. At each iteration it evaluates the model at each different different subset after the model trained on the other 4 subsets. Each model created can have very different value for each parameter. The model with again the largest accuracy "wins".
+We are ready now to evaluate the chosen models on the test data. This is the following result:
 
-We are ready now to evaluate the final model on the test data. This is the following result:
+| Algorithms                | Accuracy | Specificity |
+|---------------------------|:--------:|:-----------:|
+| Random Forest             |  0.8258  |   0.8506    |
+| Support Vector Machine    |  0.8123  |   0.8047    |
+| AdaBoost                  |  0.8313  |   0.8207    |
+| Gradient Boosting Machine |  0.8298  |   0.8200    |
+
+Choosing the best model is not an easy task, however the metrics **accuracy** and **specificity** will help us to do so. The **accuracy** is division of number of correct predictions by total number of predictions. We desire this number to be high. Furthermore, the **specificity** is another metric which expresses the ability of a test to correctly identify policyholders who *haven't* claimed a loan. This number should be clearly high.
+
+The best model is one that can maximize both metrics. SVM has the worst accuracy and worst specificity. Random Forest has the highest specificity, but AdaBoost has the highest accuracy. Besides AdaBoost and Gradient Boosting Machine have almost the same values for both metrics. The accuracy value of the model Random Forest which already contains the highest specificity is very close to the model with the highest accuracy. Therefore for this prediction, Random Forest is the best appropriate model.
+
+# References
+
+## Articles
+
+\[1\] Jair Cervantes, Farid Garcia-Lamont, Lisbeth Rodríguez-Mazahua, Asdrubal Lopez: A comprehensive survey on support vector machine classification: Applications, challenges and trends, Neurocomputing, Volume 408 (2020)
+
+## Websites
+
+\[1\] https://www.analyticsvidhya.com/blog/2016/03/tutorial-powerful-packages-imputing-missing-values/
+
+\[2\] https://towardsdatascience.com/https-medium-com-pupalerushikesh-svm-f4b42800e989
+
+\[3\] https://www.analyticsvidhya.com/blog/2021/09/adaboost-algorithm-a-complete-guide-for-beginners/#:\~:text=What%20is%20the%20AdaBoost%20Algorithm,are%20also%20called %20Decision%20Stumps.

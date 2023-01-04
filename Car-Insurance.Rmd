@@ -22,6 +22,10 @@ library(caTools)
 library(mltools)
 library(xgboost)
 library(viridis) 
+library(gbm)
+library(ada)
+library(kernlab)
+library(klaR)
 ```
 
 The dataset chosen was the Car Insurance Claim dataset.
@@ -34,22 +38,11 @@ carDf <- read.csv("Car_Insurance_Claim.csv")
 head(carDf,5)
 ```
 
-Before changing the categorical column to its labels, i will save some labels.
-
-```{r}
-labelDRIVING_EXPERIENCE <- unique(carDf$DRIVING_EXPERIENCE)
-labelVEHICLE_YEAR <- unique(carDf$VEHICLE_YEAR)
-```
-
-We will change the categorical values into multiple category values. We need to change the type of the column to a numerical one so we can plot a correlation matrix.
-
-```{r}
-sapply(carDf, class)
-```
+After analyzing the histogram of each categorical column, I decided to combine 2 categories together for the column DRIVING_EXPERIENCE, so that there is the more or less the same number of people for each category. 
 
 ```{r}
 carDf %>% 
-  select(DRIVING_EXPERIENCE) %>% 
+  dplyr::select(DRIVING_EXPERIENCE) %>% 
   group_by(DRIVING_EXPERIENCE) %>% 
   summarise(count = n(),
             .groups = 'drop') %>% 
@@ -62,7 +55,6 @@ carDf %>%
   theme(legend.position="none")
 ```
 
-
 ```{r}
 carDf <- carDf %>% 
     mutate(DRIVING_EXPERIENCE = case_when(DRIVING_EXPERIENCE == "20-29y" ~ "20y+",
@@ -70,6 +62,11 @@ carDf <- carDf %>%
                                           TRUE ~ DRIVING_EXPERIENCE))
 ```
 
+For every categorical column, we perform a manual label encoding. I need to change the type of the column to a numerical one so I can plot a correlation matrix.
+
+```{r}
+sapply(carDf, class)
+```
 
 ```{r}
 carDf$AGE <- as.numeric(factor(carDf$AGE,levels = c("16-25", "26-39", "40-64", "65+")))
@@ -89,22 +86,16 @@ carDf$VEHICLE_YEAR <- as.numeric(factor(carDf$VEHICLE_YEAR,labels = c("before 20
 carDf$VEHICLE_TYPE <- as.numeric(factor(carDf$VEHICLE_TYPE,labels = c("sedan","sports_car")))
 ```
 
-We summarise the data set to have an overview of each column.
-
-```{r}
-summary(carDf)
-```
-
 ```{r}
 sapply(carDf, typeof)
 ```
 
 
-We will save the correlation values between columns into a dataframe. We removed ID from the correlation plot it was white in almost every tile.
+I will save the correlation values between columns into a dataframe. I removed ID from the correlation plot it was white in almost every tile.
 
 ```{r}
 corrDf <- carDf %>% 
-  select(AGE, GENDER, RACE, DRIVING_EXPERIENCE, EDUCATION, INCOME,
+  dplyr::select(AGE, GENDER, RACE, DRIVING_EXPERIENCE, EDUCATION, INCOME,
          CREDIT_SCORE, VEHICLE_OWNERSHIP, VEHICLE_TYPE, VEHICLE_YEAR, MARRIED, CHILDREN, 
          POSTAL_CODE, ANNUAL_MILEAGE, SPEEDING_VIOLATIONS, DUIS, PAST_ACCIDENTS,
          OUTCOME) %>% 
@@ -112,7 +103,7 @@ corrDf <- carDf %>%
   round(2)
 ```
 
-```{r}
+```{r, fig.dim = c(8, 12)}
 corrDf %>% 
   melt() %>% 
   ggplot(aes(x=Var1, y=Var2, fill=value)) + 
@@ -135,19 +126,19 @@ corrDf %>%
         legend.position = "right")
 ```
 
-First, let us see the most correlated features with the OUTCOME column.
+First, let me see the most correlated features with the OUTCOME column.
 
 ```{r}
 corrDf %>% 
   as.data.frame() %>% 
-  select(OUTCOME) %>% 
+  dplyr::select(OUTCOME) %>% 
   mutate(posOUTCOME = case_when(OUTCOME < 0 ~ abs(OUTCOME),
                                OUTCOME >= 0  ~ OUTCOME))  %>% 
   arrange(desc(posOUTCOME)) %>% 
-  select(OUTCOME)
+  dplyr::select(OUTCOME)
 ```
 
-We can see that the 5 columns most correlated to the column OUTCOME are:
+The 5 columns most correlated to the column OUTCOME are:
 - DRIVING_EXPERIENCE
 - VEHICLE_OWNERSHIP
 - CREDIT_SCORE
@@ -161,7 +152,11 @@ And the 5 columns least correlated to the column OUTCOME are:
 - POSTAL_CODE
 - GENDER
 
-Now we have seen that there are 2 column with some a lot of NA values. Those columns are the CREDIT_SCORE and the ANNUAL_MILEAGE. One question we might ask is if it is possible to delete those columns. However, from the previous table we could see there is some correlation from the target and those 2 columns. So the following will be a method how to deal and solve the NA issue. 
+Now I had seen that there are 2 column with some a lot of NA values. Those columns are the CREDIT_SCORE and the ANNUAL_MILEAGE. One question I might ask is if it is possible to delete those columns. However, from the previous table I could see there is some correlation from the target and those 2 columns. So the following will be a method how to deal and solve the NA issue. 
+
+```{r}
+summary(carDf)
+```
 
 ```{r}
 carDf$AGE <- factor(carDf$AGE)
@@ -182,18 +177,17 @@ carDf <- cbind(carDf[c(1:13, 15:19)], apply(carDf[14],2, f))
 carDf$ANNUAL_MILEAGE <- factor(carDf$ANNUAL_MILEAGE)
 ```
 
-```{r}
-oldANNUAL <- as.numeric(carDf$ANNUAL_MILEAGE)
-oldCREDIT <- carDf$CREDIT_SCORE
-```
+Since the ID is not a feature to train the model, I deleted this column.
 
 ```{r}
 carDf <- carDf %>% 
-  select(AGE, GENDER, RACE, DRIVING_EXPERIENCE, EDUCATION, INCOME,
+  dplyr::select(AGE, GENDER, RACE, DRIVING_EXPERIENCE, EDUCATION, INCOME,
          CREDIT_SCORE, VEHICLE_OWNERSHIP, VEHICLE_TYPE, VEHICLE_YEAR, MARRIED, CHILDREN, 
          POSTAL_CODE, ANNUAL_MILEAGE, SPEEDING_VIOLATIONS, DUIS, PAST_ACCIDENTS,
          OUTCOME)
 ```
+
+To compute the missing values, the missForest algorithm will predict those values for me. After looking at the distribution of features with missing values, I will plot the distribution of those column before and after the missForest algorithm predictions. The distribution didn't change, so I decided to accept the values to fill the missing values.
 
 ```{r}
 carDfMissF <- missForest(carDf)
@@ -207,7 +201,7 @@ carDfMissF$OOBerror
 carDfMissF$ximp %>% 
   ggplot() +
   geom_density(aes(x = CREDIT_SCORE)) +
-  geom_density(aes(x = oldCREDIT), color="blue", linetype="dashed", na.rm = TRUE) +
+  geom_density(aes(x = carDf$CREDIT_SCORE), color="blue", linetype="dashed", na.rm = TRUE) +
   labs(title = "People claiming a loan vs people not claiming a loan", x = "", y = "Amount")
 ```
 
@@ -217,16 +211,16 @@ carDfMissF$ximp$ANNUAL_MILEAGE <- as.numeric(carDfMissF$ximp$ANNUAL_MILEAGE)
 carDfMissF$ximp %>% 
   ggplot() +
   geom_density(aes(x = ANNUAL_MILEAGE)) +
-  geom_density(aes(x = oldANNUAL), color="blue", linetype="dashed", na.rm = TRUE) +
+  geom_density(aes(x = as.numeric(carDf$ANNUAL_MILEAGE)), color="blue", linetype="dashed", na.rm = TRUE) +
   labs(title = "People claiming a loan vs people not claiming a loan", x = "ANNUAL_MILEAGE in (km) - 1 km", y = "Amount")
 ```
-
-Since we decided to accept the filled NA values by the missForest algorithm, we will save them in the original data set carDf.
 
 ```{r}
 carDf <- carDfMissF$ximp
 rm(carDfMissF)
 ```
+
+I want to perform an one hot encoding of the column VEHICLE_TYPE. I need to change the type of every other column to numeric and leave the VEHICLE_TYPE as category column. The function dummyVars will do the one hot encoding for me.
 
 ```{r}
 carDf<- carDf %>% 
@@ -263,9 +257,9 @@ carDf <- data.frame(predict(dummy, newdata=carDf))
 rm(dummy)
 ```
 
-Now we have filled the NA's values cells, we can study the data a little more. We will do some plots to visualize what we are working with.
+# Analyzing the data
 
-We need to solve the problem of data set being imbalanced. We will need to handle this problem later.
+Now I had filled the NA's values cells, I can study the data a little more. I will do some plots to visualize what I are working with.
 
 ```{r}
 carDf$AGE <- factor(carDf$AGE)
@@ -277,9 +271,10 @@ carDf$INCOME <- factor(carDf$INCOME)
 carDf$VEHICLE_YEAR <- factor(carDf$VEHICLE_YEAR)
 carDf$VEHICLE_TYPE.sedan <- factor(carDf$VEHICLE_TYPE.sedan)
 carDf$VEHICLE_TYPE.sport_car <- factor(carDf$VEHICLE_TYPE.sport_car)
-carDf$ANNUAL_MILEAGE <- factor(carDf$ANNUAL_MILEAGE)
 carDf$OUTCOME <- factor(carDf$OUTCOME)
 ```
+
+I need to solve the problem of data set being imbalanced. I will need to handle this problem later.
 
 ```{r}
 carDf %>%
@@ -291,21 +286,21 @@ carDf %>%
 
 ```{r}
 normalizedVector <- carDf %>% 
-  select(OUTCOME) %>% 
+  dplyr::select(OUTCOME) %>% 
   group_by(OUTCOME) %>% 
   summarise(count = n(),
             .groups = 'drop') %>% 
   as.data.frame() %>% 
-  select(count)
+  dplyr::select(count)
 ```
 
+I will do some plots for the 5 most correlated 
 
-
-# DRIVING_EXPERIENCE
+## DRIVING_EXPERIENCE
 
 ```{r}
 carDf %>% 
-  select(OUTCOME, DRIVING_EXPERIENCE) %>% 
+  dplyr::select(OUTCOME, DRIVING_EXPERIENCE) %>% 
   group_by(OUTCOME, DRIVING_EXPERIENCE) %>% 
   summarise(count = n(),
             .groups = 'drop') %>% 
@@ -320,11 +315,11 @@ carDf %>%
   theme_classic()
 ```
 
-# VEHICLE_OWNERSHIP
+## VEHICLE_OWNERSHIP
 
 ```{r}
 carDf %>% 
-  select(OUTCOME, VEHICLE_OWNERSHIP) %>% 
+  dplyr::select(OUTCOME, VEHICLE_OWNERSHIP) %>% 
   group_by(OUTCOME, VEHICLE_OWNERSHIP) %>% 
   summarise(count = n(),
             .groups = 'drop') %>% 
@@ -339,7 +334,7 @@ carDf %>%
   theme_classic()
 ```
 
-# CREDIT_SCORE
+## CREDIT_SCORE
 
 ```{r}
 carDf %>%  
@@ -361,7 +356,7 @@ carDf %>%
   theme(legend.position="none")
 ```
 
-# PAST_ACCIDENTS
+## PAST_ACCIDENTS
 
 Here we study the distributions of the violations columns: SPEEDING_VIOLATIONS, DUIS, PAST_ACCIDENTS. We can see they follow a power law distribution.
 
@@ -379,11 +374,9 @@ carDf %>%
     geom_bar(alpha = 0.8)
 ```
 
-Now let us how it
-
 ```{r}
 carDf %>% 
-  select(OUTCOME, SPEEDING_VIOLATIONS, DUIS, PAST_ACCIDENTS) %>% 
+  dplyr::select(OUTCOME, SPEEDING_VIOLATIONS, DUIS, PAST_ACCIDENTS) %>% 
   group_by(OUTCOME) %>% 
   summarise(across(everything(), sum),
             .groups = 'drop')  %>%
@@ -396,16 +389,11 @@ carDf %>%
   labs(title = "Number of violations for each category", x = "", y = "Amount")
 ```
 
-```{r}
-labelVEHICLE_YEAR
-```
-
-
-# VEHICLE_YEAR
+## VEHICLE_YEAR
 
 ```{r}
 carDf %>% 
-  select(OUTCOME, VEHICLE_YEAR) %>% 
+  dplyr::select(OUTCOME, VEHICLE_YEAR) %>% 
   group_by(OUTCOME, VEHICLE_YEAR) %>% 
   summarise(count = n(),
             .groups = 'drop') %>% 
@@ -415,14 +403,13 @@ carDf %>%
   ggplot(aes(x = factor(OUTCOME), y = normalizedCount, fill = factor(VEHICLE_YEAR))) +
   geom_bar(position = "dodge", stat="identity") +
   scale_x_discrete(breaks = c(0, 1), labels = c("FALSE","TRUE")) +
-  scale_fill_discrete(labels = c(labelVEHICLE_YEAR), name = "Year of bought Vehicle") +
+  scale_fill_discrete(labels = c("before 2015", "after 2015"), name = "Year of bought Vehicle") +
   labs(title = "Number of violations for each category", x = "", y = "Amount")
 ```
 
 # Balance the dataset
 
-Before we talk about balancing the dataset, we will first split the data into training and testing. Later we will balance the training data.
-
+Before I talk about balancing the dataset, I will first split the data into training and testing. Later I will balance the training data.
 
 ```{r}
 set.seed(42)
@@ -442,7 +429,7 @@ train %>%
   labs(title = "People claiming a loan vs people not claiming a loan", x = "", y = "Amount")
 ```
 
-
+The upSample function will balanced the training data. It will duplicate some rows.
 
 ```{r}
 set.seed(9560)
@@ -460,8 +447,7 @@ rm(up_train)
 train %>%
   ggplot(aes(x = factor(Class))) +
   geom_bar(stat = "count") + 
-  scale_x_discrete(breaks = c("0","1")) +
-  labs(title = "People claiming a loan vs people not claiming a loan", x = "", y = "Amount")
+  scale_x_discrete(breaks = c("0","1"))
 ```
 
 ```{r}
@@ -471,10 +457,21 @@ sapply(carDf, class)
 
 # Models
 
+Now after analyzing the data, I can start training some models. After that, I will use the model to predict to training data and the test data separately. I will do the previous so I can evaluate each model.
+
+```{r}
+repeat_cv <- trainControl(method='repeatedcv', number=10, repeats=5)
+```
+
 ## Random Forest
 
 ```{r}
-rf <- randomForest(Class ~ ., data=train, proximity=TRUE) 
+rf <- train(
+        as.factor(Class)~., 
+        data=train, 
+        method='rf', 
+        trControl=repeat_cv,
+        metric='Accuracy')
 print(rf)
 ```
 
@@ -488,136 +485,82 @@ p2 <- predict(rf, test)
 confusionMatrix(p2, test$OUTCOME, positive = "1")
 ```
 
-## XGBoost
+## Adaboost
 
 ```{r}
-dtrain <- xgb.DMatrix(data = as.matrix(train[, - 19]), label=train$Class)
-bst <- xgb.train(data=dtrain, max.depth=2, 
-                 eta=1, nthread = 2, nrounds=2, watchlist=watchlist, objective = "binary:logistic")
-```
-
-```{r}
-
-```
-
-
-```{r}
-p3 <- predict(model_xgb, test)
-confusionMatrix(p3, test$OUTCOME, positive = "1")
-```
-
-
-```{r}
-p2 <- predict(xgboost_model, xgboost_train)
-```
-
-
-
-
-## Support Vector Machine
-
-```{r}
-svm_model <- svm(as.factor(Class) ~ ., data=train, kernel = "radial", cost = 5)
-print(svm_model)
-```
-
-```{r}
-p1 <- predict(svm_model, train)
-confusionMatrix(p1, train$Class, positive = "1")
-```
-
-```{r}
-p2 <- predict(svm_model, test)
-confusionMatrix(p2, test$OUTCOME, positive = "1")
-```
-
-## Naïve Bayes
-
-```{r}
-nBayes <- naiveBayes(as.factor(Class) ~ ., data=train)
-print(nBayes)
-```
-
-```{r}
-p1 <- predict(nBayes, train)
-confusionMatrix(p1, train$Class, positive = "1")
-```
-
-```{r}
-p2 <- predict(nBayes, test)
-confusionMatrix(p2, test$OUTCOME, positive = "1")
-```
-
-
-As we can see from the accuracy, we will rank the best model to worst models.
-1. Random Forest
-2. Support Vector Machine
-3. Naïve Bayes
-
-So we decided to continue with the random forest model.
-
-# Cross-validation
-
-
-```{r}
-repeat_cv <- trainControl(method='repeatedcv', number=10, repeats=3)
-
-forest <- train(
+adaB <- train(
         as.factor(Class)~., 
         data=train, 
-        method='rf', 
+        method='ada', 
         trControl=repeat_cv,
         metric='Accuracy')
 ```
 
 ```{r}
-print(forest)
+p3 <- predict(adaB, train)
+confusionMatrix(p3, train$Class, positive = "1")
 ```
 
 ```{r}
-sapply(test, class)
-```
-
-```{r}
-sapply(train, class)
-```
-
-
-
-```{r}
-p4 <- predict(forest, test)
+p4 <- predict(adaB, test)
 confusionMatrix(p4, test$OUTCOME, positive = "1")
 ```
 
+## Gradient Boosting machine
 
-
-# USELESS
-
-```{r, warning=FALSE}
-carDf %>% 
-  ggplot(aes(x = ANNUAL_MILEAGE)) +
-  stat_density(data = subset(carDf,OUTCOME == "0"), bins = 30, na.rm = FALSE, 
-               adjust = 1.2, alpha = 0.5,fill="#FFBB00") + 
-  stat_density(data = subset(carDf,OUTCOME == "1"), bins = 30, na.rm = FALSE, 
-               adjust = 1.2, alpha = 0.5,fill="blue") +
-  labs(title = "Density plot of annual mileage", x = "Annual mileage", y = "", subtitle = "Yellow = FALSE, Mauve = TRUE") +
-  theme(axis.text.y = element_blank(),  axis.ticks.y = element_blank()) 
+```{r}
+gbmachine <- train(
+        as.factor(Class)~., 
+        data=train, 
+        method='gbm', 
+        trControl=repeat_cv,
+        metric='Accuracy')
 ```
 
 ```{r}
-carDf %>% 
-  select(OUTCOME, INCOME) %>% 
-  group_by(OUTCOME, INCOME) %>% 
-  summarise(countI = n(),
-            .groups = 'drop') %>% 
-  as.data.frame() %>% 
-  ggplot(aes(x = INCOME, y = countI)) +
-  geom_bar(aes(fill = factor(OUTCOME)), position = "dodge", stat="identity") +
-  scale_x_discrete(labels = c("upper class", "poverty", "working class", "middle class" )) +
-  scale_fill_discrete(name = "Claimed loan", labels = c("FALSE", "TRUE")) +
-  labs(title = "Income vs Outcome", x = "", y = "Frequency")
-  
+p5 <- predict(gbmachine, train)
+confusionMatrix(p5, train$Class, positive = "1")
 ```
+
+```{r}
+p6 <- predict(gbmachine, test)
+confusionMatrix(p6, test$OUTCOME, positive = "1")
+```
+
+## Support Vector Machine
+
+```{r}
+svm_model <- train(
+        as.factor(Class)~., 
+        data=train, 
+        method="svmLinear", 
+        trControl=repeat_cv,
+        metric='Accuracy')
+print(svm_model)
+```
+
+```{r}
+p7 <- predict(svm_model, train)
+confusionMatrix(p7, train$Class, positive = "1")
+```
+
+```{r}
+p8 <- predict(svm_model, test)
+confusionMatrix(p8, test$OUTCOME, positive = "1")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
