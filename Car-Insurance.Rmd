@@ -347,8 +347,8 @@ carDf %>%
 ```{r}
 carDf %>%
   ggplot(aes(x = factor(OUTCOME), y = CREDIT_SCORE, fill = factor(OUTCOME))) + 
-  geom_violin() +
-  geom_boxplot(width = 0.1, alpha = 0.05) +
+  #geom_violin() +
+  geom_boxplot(width = 0.5, alpha = 0.7) +
   scale_x_discrete(name = "Claimed loan", labels = c("FALSE", "TRUE")) +
   scale_fill_viridis(discrete = TRUE, alpha = 0.6) +
   labs(title = "Distribution of the credit score for each outcome option", x = "", y = "Credit score",
@@ -548,21 +548,3 @@ confusionMatrix(p7, train$Class, positive = "1")
 p8 <- predict(svm_model, test)
 confusionMatrix(p8, test$OUTCOME, positive = "1")
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
