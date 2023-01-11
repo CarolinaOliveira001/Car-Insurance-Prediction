@@ -480,10 +480,16 @@ p1 <- predict(rf, train)
 confusionMatrix(p1, train$Class, positive = "1")
 ```
 
+
 ```{r}
 p2 <- predict(rf, test)
 confusionMatrix(p2, test$OUTCOME, positive = "1")
 ```
+
+```{r}
+199/(199+480)
+```
+
 
 ## Adaboost
 
@@ -504,6 +510,10 @@ confusionMatrix(p3, train$Class, positive = "1")
 ```{r}
 p4 <- predict(adaB, test)
 confusionMatrix(p4, test$OUTCOME, positive = "1")
+```
+
+```{r}
+244/(244 + 538)
 ```
 
 ## Gradient Boosting machine
@@ -527,6 +537,10 @@ p6 <- predict(gbmachine, test)
 confusionMatrix(p6, test$OUTCOME, positive = "1")
 ```
 
+```{r}
+246 /(246 + 534)
+```
+
 ## Support Vector Machine
 
 ```{r}
@@ -548,3 +562,8 @@ confusionMatrix(p7, train$Class, positive = "1")
 p8 <- predict(svm_model, test)
 confusionMatrix(p8, test$OUTCOME, positive = "1")
 ```
+
+```{r}
+268 /(268 + 519)
+```
+

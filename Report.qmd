@@ -93,16 +93,16 @@ This algorithm is kind of an extension of the previous model. Instead of having 
 
 We are ready now to evaluate the chosen models on the test data. This is the following result:
 
-| Algorithms                | Accuracy | Specificity |
-|---------------------------|:--------:|:-----------:|
-| Random Forest             |  0.8258  |   0.8506    |
-| Support Vector Machine    |  0.8123  |   0.8047    |
-| AdaBoost                  |  0.8313  |   0.8207    |
-| Gradient Boosting Machine |  0.8298  |   0.8200    |
+| Algorithms                | Accuracy | False discovery rate |
+|---------------------------|:--------:|:--------------------:|
+| Random Forest             |  0.8273  |        0.2931        |
+| Support Vector Machine    |  0.8123  |        0.3405        |
+| AdaBoost                  |  0.8313  |        0.3120        |
+| Gradient Boosting Machine |  0.8298  |        0.3154        |
 
-Choosing the best model is not an easy task, however the metrics **accuracy** and **specificity** will help us to do so. The **accuracy** is the division of number of correct predictions by total number of predictions. We desire this number to be high. Furthermore, the **specificity** is another metric which expresses the ability of a test to correctly identify policyholders who *haven't* claimed a loan. This number should also be clearly high.
+Choosing the best model is not an easy task, however the metrics **accuracy** and **false discovery rate (FDR)** will help us to do so. The **accuracy** is the division of number of correct predictions by total number of predictions. We desire this number to be high. Furthermore, the **FDR** is another metric which is expected ratio of the number of people who were predicted as *having* claimed a loan, even though they *didn't* to the total number of people who were predicted as claimed a loan. This number should be clearly low.
 
-The best model is one that can maximize both metrics. SVM has the worst accuracy and worst specificity. Random Forest has the highest specificity, but AdaBoost has the highest accuracy. Besides AdaBoost and Gradient Boosting Machine have almost the same values for both metrics. The accuracy value of the model Random Forest which already contains the highest specificity is very close to the model with the highest accuracy. Therefore for this prediction, Random Forest is the best appropriate model.
+The best model is one that can maximize both metrics. SVM has the worst accuracy and worst FDR. Random Forest has the lowest FDR value, but AdaBoost has the highest accuracy. Besides AdaBoost and Gradient Boosting Machine have almost the same values for both metrics. The accuracy value of the model Random Forest which already contains the lowest FDR value is very close to the model with the highest accuracy. Therefore for this prediction, Random Forest is the best appropriate model.
 
 # References
 
